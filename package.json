@@ -1,0 +1,40 @@
+{
+  "name": "@local/dsh-sidebar-account-meter",
+  "version": "1.0.10",
+  "private": true,
+  "type": "module",
+  "description": "Codex usage, DeepSeek balances and WorkBuddy credits in the sidebar",
+  "exports": {
+    ".": "./host-1.0.5.js",
+    "./host-1.0.5": "./host-1.0.5.js",
+    "./client": "./client.js",
+    "./locale/*.json": "./locale/*.json",
+    "./icon": "./icon.svg"
+  },
+  "files": [
+    "host-1.0.5.js",
+    "codex-1.0.5.js",
+    "balance-1.0.5.js",
+    "client.js",
+    "cordis.patch.yml",
+    "locale/*.json",
+    "icon.svg"
+  ],
+  "dependencies": {
+    "@earendil-works/pi-ai": "1.1.0",
+    "@deepseek-ai/dsh-credentials": "0.2.1-rc.2"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web",
+      "immediately": true,
+      "inject": [
+        "@deepseek-ai/dsh-client-ui-sidebar",
+        "@deepseek-ai/dsh-client-connection"
+      ]
+    }
+  }
+}

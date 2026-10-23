@@ -1,0 +1,4 @@
+- insert:
+    - id: local-sidebar-account-meter
+      name: '@local/dsh-sidebar-account-meter'
+      config: {}
