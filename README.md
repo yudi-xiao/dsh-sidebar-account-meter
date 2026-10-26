@@ -21,17 +21,46 @@ WorkBuddy 为可选集成，需要先安装并登录 [dsh-workbuddy-oauth](https
 
 ## 安装
 
-克隆此仓库后，在 DeepSeek Harness 中让 Agent 使用插件管理工具安装仓库的**绝对路径**：
+克隆此仓库后，先用 `npm pack` 打包，再在 DeepSeek Harness 中让 Agent 使用插件管理工具安装该 tgz 的**绝对路径**（原因见下文「不要用 link: 安装」）：
 
 ```json
-{"action":"install_bundle","target":"/absolute/path/to/dsh-sidebar-account-meter"}
+{"action":"install_bundle","target":"/absolute/path/to/local-dsh-sidebar-account-meter-1.0.12.tgz"}
 ```
 
 工具名为 `plugin_manager`，实际授权遵循当前 Harness 权限设置。请以安装结果中的 `application` 和 `nextStep` 判断是否生效。
 
 若工具报告 `already-installed`，先通过插件管理工具移除 `@local/dsh-sidebar-account-meter`，再安装新版本。不要手工修改 Harness profile 的依赖或配置。
 
-安装后的本地依赖可能链接到源码目录，请保留该目录。仓库发布不会更改现有安装路径。
+### 不要用 `link:` / 符号链接安装
+
+插件的 Codex 余额依赖 `@earendil-works/pi-ai`。若以 `link:`（符号链接）方式安装，该包位于 Harness profile 的 `node_modules`，而 Node.js 解析依赖时按入口文件的**真实路径**向上查找 `node_modules`——链接目标在 profile 之外，因此**找不到 pi-ai**，Codex 余额会静默失效。
+
+升级前请先打包再安装，让插件以真实目录落到 profile 内：
+
+```bash
+npm pack                      # 产出 local-dsh-sidebar-account-meter-<version>.tgz
+```
+
+```json
+{"action":"install_bundle","target":"/absolute/path/to/local-dsh-sidebar-account-meter-1.0.12.tgz"}
+```
+
+如确需保留源码目录的链接安装，则必须在链接目标的上级目录提供可解析的 `node_modules`，否则同样失效。
+
+## 排障
+
+侧边栏显示「档位未知 / 暂无额度数据」时，把鼠标悬停在用量条上可看到具体原因：
+
+| 提示 | 含义 | 处理 |
+| --- | --- | --- |
+| 依赖缺失 (pi-ai) | 找不到 `@earendil-works/pi-ai`，通常是 `link:` 安装 | 按上文改为 tgz 安装 |
+| 依赖缺失 (credentials) | 找不到 `@deepseek-ai/dsh-credentials` | 重装插件；勿手工放置替代包，会遮蔽宿主实现并连带影响其他插件 |
+| 插件加载失败 | 插件初始化异常 | 重装插件并查看 Harness 日志 |
+| 鉴权失败 | OAuth token 无效或已过期 | 重新登录 Codex |
+| 接口请求失败 | 上游 `chatgpt.com` 返回异常 | 稍后重试 |
+| 请求超时 | 25 秒内未返回 | 检查网络 |
+
+不要手工在 profile 的 `node_modules` 下创建占位包来「临时验证」。`@deepseek-ai/dsh-credentials` 是多个插件的 peer 依赖，占位包会遮蔽宿主提供的真实实现，导致其他插件（如 `dsh-workbuddy-oauth`）在无提示的情况下崩溃。
 
 ## 验证
 

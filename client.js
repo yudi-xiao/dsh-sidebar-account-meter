@@ -84,6 +84,21 @@ async function readWorkBuddy(signal, request = fetch) {
             const timer = setInterval(update, 120000);
             return () => { alive = false; controller.abort(); clearInterval(timer); };
           }, [tick]);
+          // Host `reason` codes are diagnostics: show them only in the tooltip,
+          // never as the primary label, so a dependency fault is distinguishable
+          // from an expired token or an upstream failure.
+          const REASONS = {
+            'pi-ai dependency unavailable': ['依赖缺失 (pi-ai)', 'Missing dependency (pi-ai)'],
+            'credentials dependency unavailable': ['依赖缺失 (credentials)', 'Missing dependency (credentials)'],
+            'integration unavailable': ['插件加载失败', 'Plugin load failed'],
+            'authentication failed': ['鉴权失败', 'Authentication failed'],
+            'usage request failed': ['接口请求失败', 'Usage request failed'],
+            'timeout': ['请求超时', 'Timed out'],
+          };
+          const reason = row => {
+            const hit = REASONS[row?.reason];
+            return hit ? t(hit[0], hit[1]) : null;
+          };
           const status = row => {
             if (!row) return error ? t('连接失败', 'Offline') : t('查询中…', 'Loading…');
             if (row.status === 'signed-out') return t('未登录', 'Signed out');
@@ -96,7 +111,8 @@ async function readWorkBuddy(signal, request = fetch) {
           const c = data?.codex, d = data?.deepseek;
           const codex = c?.status === 'ready' ? c.windows.map(w => `${Math.round(w.remaining)}%`).join(' / ') || t('暂无额度数据', 'Unavailable') : status(c);
           const plan = c?.planLabel || t('档位未知', 'Unknown plan');
-          const codexTitle = c ? `Codex ${plan}` : 'Codex';
+          const codexReason = c?.status === 'ready' ? null : reason(c);
+          const codexTitle = c ? `Codex ${plan}${codexReason ? ` (${codexReason})` : ''}` : 'Codex';
           const ds = d?.status === 'ready' ? money(d.total) : status(d);
           const credits = row => row.status === 'ready' ? (row.unlimited ? t('无限额', 'Unlimited') : `${row.total.toLocaleString(locale, {maximumFractionDigits:2})} ${t('积分', 'credits')}`) : status(row);
           const wbSummary = !wb ? t('查询中…', 'Loading…') : wb.accounts.length === 1 ? credits(wb.accounts[0]) : wb.accounts.length > 1 ? `${wb.accounts.filter(a => a.status === 'ready').length}/${wb.accounts.length} ${t('账户可用', 'accounts ready')}` : status(wb);

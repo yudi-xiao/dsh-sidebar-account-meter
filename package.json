@@ -1,6 +1,6 @@
 {
   "name": "@local/dsh-sidebar-account-meter",
-  "version": "1.0.10",
+  "version": "1.0.12",
   "private": true,
   "type": "module",
   "description": "Codex usage, DeepSeek balances and WorkBuddy credits in the sidebar",
